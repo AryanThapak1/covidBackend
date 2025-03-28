@@ -11,13 +11,11 @@ from functools import wraps
 app = Flask(__name__)
 CORS(app)
 
-app.config['SECRET_KEY'] = 'my_jwt_secret_for_my_app'  # Change this to a strong secret key
+app.config['SECRET_KEY'] = 'my_jwt_secret_for_my_app'  
 
-# Load the model and feature names
 model = joblib.load('covid_prediction_model.joblib')
 feature_names = joblib.load('feature_names.joblib')
 
-# Initialize database
 def init_db():
     conn = sqlite3.connect('users.db')
     cursor = conn.cursor()
@@ -31,7 +29,6 @@ def init_db():
 
 init_db()
 
-# JWT Token Decorator
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -49,14 +46,13 @@ def token_required(f):
         return f(current_user, *args, **kwargs)
     return decorated
 
-# Signup API
 @app.route('/signup', methods=['POST'])
 def signup():
     data = request.json
     username = data.get('Name')
     password = data.get('password')
-    email=data.get('email')
-    aadhar=data.get('aadharId')
+    email = data.get('email')
+    aadhar = data.get('aadharId')
 
     if not username or not password:
         return jsonify({'error': 'Username and password are required'}), 400
@@ -73,7 +69,6 @@ def signup():
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Username already exists'}), 400
 
-# Login API
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -96,16 +91,13 @@ def login():
     
     return jsonify({'error': 'Invalid credentials'}), 401
 
-# Protected API (Example)
 @app.route('/protected', methods=['GET'])
 @token_required
 def protected_route(current_user):
     return jsonify({'message': f'Hello {current_user}, you have access to this route!'})
 
-# Predict API (Requires JWT Token)
 @app.route('/predict', methods=['POST'])
-@token_required
-def predict_covid(current_user):
+def predict_covid():
     try:
         data = request.json
 
@@ -135,7 +127,6 @@ def predict_covid(current_user):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Feature List API
 @app.route('/features', methods=['GET'])
 def get_features():
     return jsonify({'features': feature_names, 'total_features': len(feature_names)})
